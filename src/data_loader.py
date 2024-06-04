@@ -51,7 +51,7 @@ def load_top_k_chinese_per_length(k=2000, t_count=20):
     return results
 
 
-def wrap_up_request(model_name, key, content):
+def wrap_up_request(model_name, key, content, temperature=1.0, max_tokens=502):
     return {
             "custom_id": key,
             "method": "POST",
@@ -67,29 +67,29 @@ def wrap_up_request(model_name, key, content):
                         }
                     ]
                 }],
-                "max_tokens": 502,
-                "response_format": {"type": 'json_object'},
-                "temperature": 1,
+                "max_tokens": max_tokens,
+                # "response_format": {"type": 'json_object'},
+                "temperature": temperature,
             }
         }
 
-def generate_batch_file(model_name, data, repeat=1):
+def generate_batch_file(model_name, data, repeat=1, temperature=1.0, max_tokens=502):
     results = []
     for key, value in data.items():
         for i in range(repeat):
-            results.append(wrap_up_request(model_name, f"{key}_0{i}", f"\"{value}\" 是什么意思？"))
-            results.append(wrap_up_request(model_name, f"{key}_1{i}", f"\"{value}\" 翻译成英文"))
+            results.append(wrap_up_request(model_name, f"{key}_0{i}", f"\"{value}\" 是什么意思？", temperature, max_tokens))
+            results.append(wrap_up_request(model_name, f"{key}_1{i}", f"\"{value}\" 翻译成英文", temperature, max_tokens))
     return results
 
 def make_gpt_batch_request():
     data = load_top_k_chinese_per_length()
-    results = generate_batch_file("gpt-4o-2024-05-13", data, 5)
+    results = generate_batch_file("gpt-4o-2024-05-13", data, 5, temperature=0)
     # results += generate_batch_file("gpt-3.5-turbo-0125", data)
     # results += generate_batch_file("gpt-4-turbo-2024-04-09", data)
     
     print(len(results))
     
-    filename = "data/gpt_batch_requests.jsonl"
+    filename = "data/gpt-4o-2024-05-13_meaning_translate_batch_requests_t_0.jsonl"
     with open(filename, 'w', encoding='utf-8') as file:
         for item in results:
             json_str = json.dumps(item, ensure_ascii=False)
@@ -172,8 +172,8 @@ def make_ranking_batch():
         make_ranking_batch_model(model)
     
 if __name__ == "__main__":
-    # make_gpt_batch_request()
+    make_gpt_batch_request()
     # make_batch_request_full_words_split_words()
-    make_ranking_batch()
+    # make_ranking_batch()
     
     
