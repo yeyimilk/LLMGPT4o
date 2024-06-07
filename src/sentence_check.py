@@ -4,13 +4,11 @@ import numpy as np
 from data_loader import load_top_k_chinese_per_length
 import jieba
 import csv
+import pandas as pd
 
-if __name__ == "__main__":
+def generate_csv():
     models = ['gpt-4-turbo-2024-04-09', 'gpt-4o-2024-05-13']
     for m in models:
-        
-        results_list = []
-        
         top_k_chinese = load_top_k_chinese_per_length()
         
         data = get_batch_list(f'data/sentence/{m}_full_split_words_batch_requests_output.jsonl')
@@ -58,3 +56,25 @@ if __name__ == "__main__":
             write = csv.writer(f)
             write.writerow(headers)
             write.writerows(results)
+            
+
+def evaluate_csv():
+    models = ['gpt-4-turbo-2024-04-09', 'gpt-4o-2024-05-13']
+    for m in models:
+        f_name = f'data/sentence/{m}_full_split_words_results.csv'
+        data = pd.read_csv(f_name)
+        full = data[data['id'].str.contains('full')]
+        split = data[data['id'].str.contains('split')]
+        
+        print(m)
+        print("====Full Words====")
+        print(full['accuracy'].value_counts().sort_index())
+        print("====Split Words====")
+        print(split['accuracy'].value_counts().sort_index())
+        print("\n")
+        
+        
+    
+if __name__ == "__main__":
+    # generate_csv()
+    evaluate_csv()

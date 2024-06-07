@@ -51,8 +51,8 @@ def load_top_k_chinese_per_length(k=2000, t_count=20):
     return results
 
 
-def wrap_up_request(model_name, key, content, temperature=1.0, max_tokens=502):
-    return {
+def wrap_up_request(model_name, key, content, temperature=1.0, max_tokens=502, json_object=True):
+    content = {
             "custom_id": key,
             "method": "POST",
             "url": "/v1/chat/completions",
@@ -72,6 +72,9 @@ def wrap_up_request(model_name, key, content, temperature=1.0, max_tokens=502):
                 "temperature": temperature,
             }
         }
+    if json_object:
+        content['body']['response_format'] = {"type": 'json_object'}
+    return content
 
 def generate_batch_file(model_name, data, repeat=1, temperature=1.0, max_tokens=502):
     results = []
