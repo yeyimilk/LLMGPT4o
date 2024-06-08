@@ -100,7 +100,8 @@ def check_results():
         else:
             print("Error")
     
-    print(result)
+    print(f"Meanings    & {result['meanings']['accuracy'] / result['meanings']['count']:.4f} & {result['meanings']['consistence'] / result['meanings']['count']:.4f} \\\\")
+    print(f"Translations    & {result['translations']['accuracy'] / result['translations']['count']:.4f} & {result['translations']['consistence'] / result['translations']['count']:.4f} \\\\")
 
 if __name__ == '__main__':
     # generate_batch_requests()

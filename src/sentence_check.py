@@ -66,12 +66,23 @@ def evaluate_csv():
         full = data[data['id'].str.contains('full')]
         split = data[data['id'].str.contains('split')]
         
-        print(m)
-        print("====Full Words====")
-        print(full['accuracy'].value_counts().sort_index())
-        print("====Split Words====")
-        print(split['accuracy'].value_counts().sort_index())
-        print("\n")
+        full_value_counts = full['accuracy'].value_counts().sort_index()
+        split_value_counts = split['accuracy'].value_counts().sort_index()
+        
+        for i in range(6):
+            if 'gpt-4o' in m:
+                print(f" & {full_value_counts.get(i, 0) / 166: .4f} & {split_value_counts.get(i, 0) / 166: .4f} \\\\")
+            else:
+                print(f"{i}\t & {full_value_counts.get(i, 0) / 166: .4f} & {split_value_counts.get(i, 0) / 166: .4f}")    
+        
+        
+        
+        # print(m)
+        # print("====Full Words====")
+        # print(full['accuracy'].value_counts().sort_index())
+        # print("====Split Words====")
+        # print(split['accuracy'].value_counts().sort_index())
+        # print("\n")
         
         
     
