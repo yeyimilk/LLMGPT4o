@@ -3,6 +3,7 @@ import json
 import re
 import jieba
 import jsonlines
+import regex
 
 def get_batch_results_list(file_path):
     data_list = []
@@ -14,13 +15,17 @@ def get_batch_results_list(file_path):
 def contains_chinese(text):
     return re.search(r'[\u4e00-\u9fff]', text) is not None
 
+def contains_korean(value):
+    if regex.search(r'\p{IsHangul}', value):
+        return True
+    return False
+
 def load_top_k_chinese(k):
     with open("data/tiktoken.json", "r") as f:
         data = json.load(f)
     
     results = {}
     
-    t = 0
     for key, value in data.items():
         if len(results.keys())>= k:
             break
@@ -30,8 +35,45 @@ def load_top_k_chinese(k):
     
     return results
 
+
+def load_top_k_token(k, chinese=True, korean=False):
+    with open("data/tiktoken.json", "r") as f:
+        data = json.load(f)
+    
+    results = {}
+    
+    for key, value in data.items():
+        if len(results.keys())>= k:
+            break
+        if korean and contains_korean(value):
+            results[key] = value
+        elif chinese and contains_chinese(value):
+            results[key] = value
+    
+    return results
+
 def load_top_k_chinese_per_length(k=2000, t_count=20):
     top_k = load_top_k_chinese(k)
+    
+    size =  0
+    count = 0
+    results = {}
+    for key, value in top_k.items():
+        if len(value) == size:
+            if count >= t_count:
+                continue
+            else:
+                count += 1
+                results[key] = value
+        else:
+            results[key] = value
+            count = 1
+            size = len(value)
+    
+    return results
+
+def load_top_k_token_per_length(k=2000, t_count=20, chinese=True, korean=False):
+    top_k = load_top_k_token(k, chinese, korean)
     
     size =  0
     count = 0
@@ -175,8 +217,28 @@ def make_ranking_batch():
         make_ranking_batch_model(model)
     
 if __name__ == "__main__":
-    make_gpt_batch_request()
+    # make_gpt_batch_request()
     # make_batch_request_full_words_split_words()
     # make_ranking_batch()
     
+    # data = load_top_k_chinese_per_length()
     
+    # obj = {
+        
+    # }
+    
+    # for key, value in data.items():
+    #     if len(value) not in obj.keys():
+    #         obj[len(value)] = 0
+    #     obj[len(value)] += 1
+
+    # keys = list(obj.keys())
+    # values = list(obj.values())
+    
+    # print(' & '.join([str(k) for k in keys]), end=' \\\\ \n')
+    # print(' & '.join([str(v) for v in values]), end=' \\\\ \n')
+        
+    data = load_top_k_token_per_length(2000, 20, chinese=False, korean=True)
+    filename = "data/korean/korean.json"
+    with open(filename, 'w', encoding='utf-8') as file:
+        json.dump(data, file, ensure_ascii=False, indent=4)
