@@ -5,6 +5,7 @@ from data_loader import load_top_k_chinese_per_length
 import jieba
 import csv
 import pandas as pd
+import matplotlib.pyplot as plt
 
 def generate_csv():
     models = ['gpt-4-turbo-2024-04-09', 'gpt-4o-2024-05-13']
@@ -58,34 +59,111 @@ def generate_csv():
             write.writerows(results)
             
 
-def evaluate_csv():
+def evaluate_csv(ids_list=None):
     models = ['gpt-4-turbo-2024-04-09', 'gpt-4o-2024-05-13']
+    
+    arrays = [None] * 6
+    
+    score_5_count = {}
+    
     for m in models:
         f_name = f'data/sentence/{m}_full_split_words_results.csv'
         data = pd.read_csv(f_name)
+        
+        if ids_list is not None:
+            data['rid'] = data['id'].str.split('_').str[0]
+            data = data[data['rid'].isin(ids_list)]
+        
         full = data[data['id'].str.contains('full')]
         split = data[data['id'].str.contains('split')]
         
         full_value_counts = full['accuracy'].value_counts().sort_index()
         split_value_counts = split['accuracy'].value_counts().sort_index()
         
-        for i in range(6):
-            if 'gpt-4o' in m:
-                print(f" & {full_value_counts.get(i, 0) / 166: .4f} & {split_value_counts.get(i, 0) / 166: .4f} \\\\")
-            else:
-                print(f"{i}\t & {full_value_counts.get(i, 0) / 166: .4f} & {split_value_counts.get(i, 0) / 166: .4f}")    
-        
-        
-        
-        # print(m)
-        # print("====Full Words====")
-        # print(full['accuracy'].value_counts().sort_index())
-        # print("====Split Words====")
-        # print(split['accuracy'].value_counts().sort_index())
-        # print("\n")
-        
-        
+        score_5_count[m] = {
+            'full': full_value_counts.get(5, 0),
+            'split': split_value_counts.get(5, 0),
+        }
     
+    return score_5_count
+        
+        
+def evalute_only_all_appear():
+    gpt4o = pd.read_csv('data/sentence/gpt-4o-2024-05-13_full_split_words_results.csv')
+    gpt4 = pd.read_csv('data/sentence/gpt-4-turbo-2024-04-09_full_split_words_results.csv')
+    
+    def extract_ids_for_appeared(id_appeared, df):
+        # dictionary to save id and appeared value
+        for index, row in df.iterrows():
+            r_id = row['id'].split('_')[0]
+            if r_id not in id_appeared:
+                id_appeared[r_id] = 0
+            
+            id_appeared[r_id] += row['appeared']
+            
+        return id_appeared
+
+    id_appeared = {}
+    
+    extract_ids_for_appeared(id_appeared, gpt4o)
+    extract_ids_for_appeared(id_appeared, gpt4)
+    
+    # only keep when value is 4
+    id_appeared = {k: v for k, v in id_appeared.items() if v == 4}
+    
+    evaluate_csv(list(id_appeared.keys()))
+    
+def evaluate_with_tokens_size(t_size=20):
+    top_k_chinese = load_top_k_chinese_per_length()
+    data = {}
+    for key, value in top_k_chinese.items():
+        if len(value) < t_size:
+            data[key] = value
+    
+    ids = list(data.keys())
+    return evaluate_csv(ids), len(ids)
+    
+
+def draw_score_figure():
+    gpt4o_full = []
+    gpt4o_split = []
+    gpt4_full = []
+    gpt4_split = []
+    totals = []
+    
+    for i in range(3, 13):
+        results, total = evaluate_with_tokens_size(i)
+        
+        gpt4o = results['gpt-4o-2024-05-13']
+        gpt4 = results['gpt-4-turbo-2024-04-09']
+        print(f"Token size: {i-1}-{total}, gpt4o: full: {gpt4o['full']}, split: {gpt4o['split']} gpt4: full: {gpt4['full']}, split: {gpt4['split']}")
+
+        gpt4o_full.append(gpt4o['full'])
+        gpt4o_split.append(gpt4o['split'])
+        gpt4_full.append(gpt4['full'])
+        gpt4_split.append(gpt4['split'])
+        totals.append(total)
+    
+    x = np.linspace(2, 11, 10)
+    plt.plot(x, gpt4o_full, label='G4o-L')
+    plt.plot(x, gpt4o_split, label='G4o-S')
+    plt.plot(x, gpt4_full, label='G4-L')
+    plt.plot(x, gpt4_split, label='G4-S')
+    plt.plot(x, totals, label='Total')
+    
+    plt.xlabel('Token Size')
+    plt.ylabel('Count')
+    plt.title('Score 5 Sentence Count Over Token Size')
+    plt.legend()
+    
+    # plt.show()
+    plt.savefig('imgs/token_size_score_5.png', dpi=200)
+
 if __name__ == "__main__":
-    # generate_csv()
+    generate_csv()    
     evaluate_csv()
+    evalute_only_all_appear()
+    draw_score_figure()
+    
+    
+    

@@ -1,6 +1,5 @@
 
 from utils.gpt_utils import get_batch_list, extract_content_from_gpt_response
-import numpy as np
 import json
 from data_loader import load_top_k_chinese_per_length
 from data_loader import wrap_up_request
@@ -104,5 +103,4 @@ def check_results():
     print(f"Translations    & {result['translations']['accuracy'] / result['translations']['count']:.4f} & {result['translations']['consistence'] / result['translations']['count']:.4f} \\\\")
 
 if __name__ == '__main__':
-    # generate_batch_requests()
     check_results()
